@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DEEP API — Research Intelligence as a Service</title>
+<meta name="description" content="Ask anything. Get structured research reports with citations. One API call. Multi-LLM. Real-time streaming.">
+<meta property="og:title" content="DEEP API — Research Intelligence as a Service">
+<meta property="og:description" content="Deep research, fact-checking, entity comparison, data extraction. One API. Structured JSON. Citations included.">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050505;--surface:rgba(255,255,255,.03);--surface2:rgba(255,255,255,.06);
+  --border:rgba(255,255,255,.08);--border2:rgba(255,255,255,.15);
+  --text:#f0f0f0;--muted:rgba(255,255,255,.45);--muted2:rgba(255,255,255,.25);
+  --purple:#8b5cf6;--blue:#3b82f6;--cyan:#06b6d4;--green:#10b981;--amber:#f59e0b;--pink:#ec4899;
+  --glow:rgba(139,92,246,.15);
+}
+body{background:var(--bg);color:var(--text);font-family:'Space Grotesk',system-ui,sans-serif;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+.w{max-width:1140px;margin:0 auto;padding:0 28px}
+
+/* Particle canvas */
+#particles{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:.4}
+
+/* Glow orbs */
+.orb{position:fixed;border-radius:50%;filter:blur(120px);pointer-events:none;z-index:0}
+.orb-1{width:600px;height:600px;background:rgba(139,92,246,.08);top:-200px;right:-200px}
+.orb-2{width:500px;height:500px;background:rgba(6,182,212,.06);bottom:-150px;left:-150px}
+.orb-3{width:400px;height:400px;background:rgba(236,72,153,.05);top:50%;left:50%;transform:translate(-50%,-50%)}
+
+.relative{position:relative;z-index:1}
+
+/* Nav */
+nav{display:flex;justify-content:space-between;align-items:center;padding:24px 0;position:relative;z-index:10}
+.logo{font-size:20px;font-weight:700;letter-spacing:-.02em}
+.logo span{background:linear-gradient(135deg,var(--purple),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.nav-links{display:flex;gap:28px;align-items:center}
+.nav-links a{color:var(--muted);text-decoration:none;font-size:14px;font-weight:400;transition:color .2s}
+.nav-links a:hover{color:var(--text)}
+.nav-btn{background:var(--purple);color:#fff;padding:8px 20px;border-radius:8px;font-weight:500;font-size:13px;text-decoration:none;transition:all .2s}
+.nav-btn:hover{background:#7c3aed;transform:translateY(-1px)}
+
+/* Hero */
+.hero{padding:100px 0 80px;text-align:center;position:relative}
+.hero-chip{display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border-radius:20px;border:1px solid var(--border2);font-size:12px;color:var(--muted);margin-bottom:28px;background:var(--surface);backdrop-filter:blur(12px)}
+.hero-chip .dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+h1{font-size:clamp(40px,7vw,72px);font-weight:700;letter-spacing:-.04em;line-height:1.05;margin-bottom:20px}
+h1 .gr{background:linear-gradient(135deg,var(--purple),var(--blue),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero-sub{font-size:18px;color:var(--muted);max-width:560px;margin:0 auto 36px;font-weight:300;line-height:1.6}
+.hero-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:13px 28px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;border:none;cursor:pointer;font-family:inherit;transition:all .25s}
+.btn-glow{background:linear-gradient(135deg,var(--purple),var(--blue));color:#fff;box-shadow:0 0 30px rgba(139,92,246,.3)}
+.btn-glow:hover{transform:translateY(-2px);box-shadow:0 0 50px rgba(139,92,246,.5)}
+.btn-glass{background:var(--surface2);color:var(--text);border:1px solid var(--border2);backdrop-filter:blur(12px)}
+.btn-glass:hover{border-color:var(--purple);background:rgba(139,92,246,.08)}
+
+/* Live demo terminal */
+.terminal{background:rgba(0,0,0,.6);border:1px solid var(--border);border-radius:16px;margin:60px auto 0;max-width:800px;overflow:hidden;backdrop-filter:blur(20px);box-shadow:0 25px 60px rgba(0,0,0,.5)}
+.terminal-bar{display:flex;align-items:center;gap:8px;padding:14px 18px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)}
+.terminal-dot{width:10px;height:10px;border-radius:50%}
+.terminal-dot.r{background:#ff5f57}.terminal-dot.y{background:#febc2e}.terminal-dot.g{background:#28c840}
+.terminal-title{font-size:11px;color:var(--muted);margin-left:8px;font-family:'JetBrains Mono',monospace}
+.terminal-body{padding:20px 24px;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.8;min-height:280px;max-height:400px;overflow-y:auto}
+.t-muted{color:var(--muted2)}.t-purple{color:var(--purple)}.t-cyan{color:var(--cyan)}.t-green{color:var(--green)}.t-amber{color:var(--amber)}.t-pink{color:var(--pink)}.t-blue{color:var(--blue)}
+.cursor{display:inline-block;width:8px;height:14px;background:var(--purple);animation:blink 1s infinite;vertical-align:middle;margin-left:2px}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* Features */
+.features{padding:100px 0}
+.features h2{font-size:36px;font-weight:700;text-align:center;margin-bottom:12px;letter-spacing:-.03em}
+.features .sub{text-align:center;color:var(--muted);margin-bottom:56px;font-size:16px}
+.feature-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.feature-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px;transition:all .3s;position:relative;overflow:hidden}
+.feature-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--purple),transparent);opacity:0;transition:opacity .3s}
+.feature-card:hover{border-color:rgba(139,92,246,.3);transform:translateY(-2px)}.feature-card:hover::before{opacity:1}
+.feature-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:16px;background:linear-gradient(135deg,rgba(139,92,246,.12),rgba(6,182,212,.08));border:1px solid rgba(139,92,246,.15)}
+.feature-card h3{font-size:16px;font-weight:600;margin-bottom:8px}
+.feature-card p{font-size:13px;color:var(--muted);line-height:1.7}
+
+/* Endpoints */
+.endpoints{padding:80px 0}
+.endpoints h2{font-size:32px;font-weight:700;margin-bottom:40px;letter-spacing:-.03em}
+.ep-grid{display:grid;gap:10px}
+.ep{display:flex;align-items:center;gap:16px;padding:16px 20px;background:var(--surface);border:1px solid var(--border);border-radius:10px;transition:border-color .2s}
+.ep:hover{border-color:rgba(139,92,246,.3)}
+.ep-method{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;min-width:52px;text-align:center}
+.ep-method.post{background:rgba(16,185,129,.1);color:var(--green)}
+.ep-method.get{background:rgba(139,92,246,.1);color:var(--purple)}
+.ep-path{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:500;flex:1}
+.ep-desc{font-size:12px;color:var(--muted)}
+.ep-badge{font-size:10px;padding:3px 8px;border-radius:6px;font-weight:600;letter-spacing:.04em}
+.ep-badge.stream{background:rgba(236,72,153,.1);color:var(--pink);border:1px solid rgba(236,72,153,.2)}
+.ep-badge.sync{background:rgba(245,158,11,.1);color:var(--amber);border:1px solid rgba(245,158,11,.2)}
+.ep-badge.async{background:rgba(6,182,212,.1);color:var(--cyan);border:1px solid rgba(6,182,212,.2)}
+
+/* Pricing */
+.pricing{padding:80px 0}
+.pricing h2{font-size:36px;font-weight:700;text-align:center;margin-bottom:12px;letter-spacing:-.03em}
+.pricing .sub{text-align:center;color:var(--muted);margin-bottom:48px}
+.price-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.price-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:36px;position:relative}
+.price-card.feat{border-color:rgba(139,92,246,.4);box-shadow:0 0 60px rgba(139,92,246,.08)}
+.price-card .tier{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:8px}
+.price-card .price{font-size:40px;font-weight:700;margin-bottom:4px;letter-spacing:-.03em}
+.price-card .price span{font-size:14px;font-weight:400;color:var(--muted)}
+.price-card .desc{font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.5}
+.price-card ul{list-style:none;margin-bottom:28px}
+.price-card li{font-size:13px;padding:7px 0;color:rgba(255,255,255,.6);padding-left:20px;position:relative}
+.price-card li::before{content:'';position:absolute;left:0;top:13px;width:6px;height:6px;border-radius:50%;background:var(--green)}
+.price-card .btn{width:100%;justify-content:center}
+.pop-tag{position:absolute;top:-11px;right:24px;background:linear-gradient(135deg,var(--purple),var(--blue));color:#fff;font-size:10px;font-weight:700;padding:4px 14px;border-radius:8px;letter-spacing:.06em}
+
+/* Try it */
+.tryit{padding:80px 0}
+.tryit h2{font-size:32px;font-weight:700;margin-bottom:8px;letter-spacing:-.03em}
+.tryit .sub{color:var(--muted);margin-bottom:28px}
+.try-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:36px;backdrop-filter:blur(12px)}
+.try-form{display:grid;gap:16px}
+.form-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+label{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;display:block}
+input,select,textarea{width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:inherit;font-size:14px;transition:border-color .2s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--purple)}
+textarea{min-height:80px;resize:vertical;font-family:'JetBrains Mono',monospace;font-size:12px}
+#tryResult{background:rgba(0,0,0,.4);border:1px solid var(--border);border-radius:12px;padding:20px;margin-top:20px;display:none;max-height:500px;overflow-y:auto}
+#tryResult pre{font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.6;white-space:pre-wrap;word-break:break-all;color:rgba(255,255,255,.7)}
+
+/* Footer */
+footer{padding:48px 0;border-top:1px solid var(--border);text-align:center}
+footer p{font-size:13px;color:var(--muted2)}
+
+@media(max-width:768px){
+  .feature-grid,.price-grid{grid-template-columns:1fr}
+  .form-row{grid-template-columns:1fr}
+  .ep-desc{display:none}
+  .nav-links a:not(.nav-btn){display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+<canvas id="particles"></canvas>
+
+<div class="relative">
+<div class="w">
+
+<nav>
+  <div class="logo"><span>DEEP</span> API</div>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#endpoints">Docs</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#tryit" class="nav-btn">Try free</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-chip"><span class="dot"></span> v1.0 — now live</div>
+  <h1>Research intelligence<br><span class="gr">as a service.</span></h1>
+  <p class="hero-sub">Ask anything. Get structured reports with citations, data points, and confidence scores. One API call. Real-time streaming. Multi-LLM.</p>
+  <div class="hero-cta">
+    <a href="#tryit" class="btn btn-glow">Start researching</a>
+    <a href="#endpoints" class="btn btn-glass">View API docs</a>
+  </div>
+
+  <!-- Live terminal demo -->
+  <div class="terminal">
+    <div class="terminal-bar">
+      <div class="terminal-dot r"></div>
+      <div class="terminal-dot y"></div>
+      <div class="terminal-dot g"></div>
+      <span class="terminal-title">deep-api — live demo</span>
+    </div>
+    <div class="terminal-body" id="termBody"></div>
+  </div>
+</div>
+
+<!-- Features -->
+<div class="features" id="features">
+  <h2>Everything you need</h2>
+  <p class="sub">Four powerful endpoints. One API key. Infinite research.</p>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-icon">&#128269;</div>
+      <h3>Deep Research</h3>
+      <p>Multi-step autonomous research agent. Plans sub-questions, searches the web, reads sources, synthesizes findings into structured reports with citations.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">&#9889;</div>
+      <h3>Real-time Streaming</h3>
+      <p>Server-Sent Events stream every step as the agent works. Watch it plan, search, read, analyze, and synthesize in real time. Or poll — your choice.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">&#128203;</div>
+      <h3>Fact Checking</h3>
+      <p>Submit any claim. The agent searches for evidence, evaluates credibility, and returns a verdict with confidence score and supporting/contradicting evidence.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">&#128200;</div>
+      <h3>Entity Comparison</h3>
+      <p>Compare 2+ entities across any dimensions. Products, companies, frameworks, cities — get a structured comparison table with scores and recommendations.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">&#127760;</div>
+      <h3>Data Extraction</h3>
+      <p>Point it at any URL. The agent reads the page and extracts structured data — entities, facts, dates, numbers. Bring your own schema or let it auto-detect.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">&#128274;</div>
+      <h3>Multi-LLM Backend</h3>
+      <p>Anthropic Claude, OpenAI GPT, Google Gemini. Different models for planning vs. research vs. synthesis. Automatic failover. Zero vendor lock-in.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Endpoints -->
+<div class="endpoints" id="endpoints">
+  <h2>API Reference</h2>
+  <div class="ep-grid">
+    <div class="ep">
+      <span class="ep-method post">POST</span>
+      <span class="ep-path">/v1/research</span>
+      <span class="ep-desc">Submit deep research query — returns task ID for polling</span>
+      <span class="ep-badge async">ASYNC</span>
+    </div>
+    <div class="ep">
+      <span class="ep-method post">POST</span>
+      <span class="ep-path">/v1/research/quick</span>
+      <span class="ep-desc">Quick research — synchronous, returns report immediately</span>
+      <span class="ep-badge sync">SYNC</span>
+    </div>
+    <div class="ep">
+      <span class="ep-method get">GET</span>
+      <span class="ep-path">/v1/research/:id</span>
+      <span class="ep-desc">Poll task status and retrieve results</span>
+    </div>
+    <div class="ep">
+      <span class="ep-method get">GET</span>
+      <span class="ep-path">/v1/research/:id/stream</span>
+      <span class="ep-desc">SSE stream — real-time step-by-step progress</span>
+      <span class="ep-badge stream">SSE</span>
+    </div>
+    <div class="ep">
+      <span class="ep-method post">POST</span>
+      <span class="ep-path">/v1/fact-check</span>
+      <span class="ep-desc">Verify claims against evidence — verdict + confidence</span>
+      <span class="ep-badge sync">SYNC</span>
+    </div>
+    <div class="ep">
+      <span class="ep-method post">POST</span>
+      <span class="ep-path">/v1/compare</span>
+      <span class="ep-desc">Compare entities — structured table + recommendation</span>
+      <span class="ep-badge sync">SYNC</span>
+    </div>
+    <div class="ep">
+      <span class="ep-method post">POST</span>
+      <span class="ep-path">/v1/extract</span>
+      <span class="ep-desc">Extract structured data from any URL</span>
+      <span class="ep-badge sync">SYNC</span>
+    </div>
+    <div class="ep">
+      <span class="ep-method get">GET</span>
+      <span class="ep-path">/health</span>
+      <span class="ep-desc">Health check — providers, search status, active tasks</span>
+    </div>
+  </div>
+</div>
+
+<!-- Pricing -->
+<div class="pricing" id="pricing">
+  <h2>Simple, usage-based pricing</h2>
+  <p class="sub">Start free. Scale when you're ready. No contracts.</p>
+  <div class="price-grid">
+    <div class="price-card">
+      <div class="tier">Starter</div>
+      <div class="price">Free</div>
+      <div class="desc">For prototyping and testing</div>
+      <ul>
+        <li>50 research queries / month</li>
+        <li>Quick research only</li>
+        <li>LLM-only (no web search)</li>
+        <li>All endpoints</li>
+        <li>Community support</li>
+      </ul>
+      <a href="#tryit" class="btn btn-glass">Get started</a>
+    </div>
+    <div class="price-card feat">
+      <div class="pop-tag">POPULAR</div>
+      <div class="tier">Pro</div>
+      <div class="price">&pound;79 <span>/ month</span></div>
+      <div class="desc">For production apps and teams</div>
+      <ul>
+        <li>2,000 research queries / month</li>
+        <li>Deep + quick research</li>
+        <li>Live web search + page reading</li>
+        <li>SSE streaming</li>
+        <li>Webhook callbacks</li>
+        <li>Priority support</li>
+      </ul>
+      <a href="#tryit" class="btn btn-glow">Start free trial</a>
+    </div>
+    <div class="price-card">
+      <div class="tier">Scale</div>
+      <div class="price">&pound;299 <span>/ month</span></div>
+      <div class="desc">For high-volume and enterprise</div>
+      <ul>
+        <li>Unlimited queries</li>
+        <li>All depths + custom schemas</li>
+        <li>Priority processing queue</li>
+        <li>Custom LLM routing</li>
+        <li>SLA guarantee</li>
+        <li>Dedicated support</li>
+        <li>Self-hosted option</li>
+      </ul>
+      <a href="mailto:hello@deep-api.io" class="btn btn-glass">Contact sales</a>
+    </div>
+  </div>
+</div>
+
+<!-- Try it -->
+<div class="tryit" id="tryit">
+  <h2>Try it live</h2>
+  <p class="sub">Enter a research query. See the structured report.</p>
+  <div class="try-box">
+    <div class="try-form">
+      <div class="form-row">
+        <div>
+          <label>API Key</label>
+          <input type="text" id="tryKey" placeholder="deep_f_...">
+        </div>
+        <div>
+          <label>Depth</label>
+          <select id="tryDepth">
+            <option value="quick">Quick (~30s)</option>
+            <option value="standard" selected>Standard (~90s)</option>
+            <option value="deep">Deep (~3min)</option>
+          </select>
+        </div>
+        <div>
+          <label>Mode</label>
+          <select id="tryMode">
+            <option value="research">Research</option>
+            <option value="fact-check">Fact Check</option>
+            <option value="compare">Compare</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label>Query</label>
+        <textarea id="tryQuery" placeholder="What is the current state of quantum computing and which companies are leading the race?"></textarea>
+      </div>
+      <button class="btn btn-glow" onclick="tryIt()" id="tryBtn" style="justify-content:center">Run research</button>
+    </div>
+    <div id="tryResult"><pre id="tryPre"></pre></div>
+  </div>
+</div>
+
+</div>
+</div>
+
+<footer><p>DEEP API — Research intelligence for developers who ship. &copy; 2026</p></footer>
+
+<script>
+// ─── Particle animation ───
+const canvas = document.getElementById('particles');
+const ctx = canvas.getContext('2d');
+let particles = [];
+function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+for (let i = 0; i < 60; i++) {
+  particles.push({
+    x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+    vx: (Math.random() - .5) * .3, vy: (Math.random() - .5) * .3,
+    r: Math.random() * 1.5 + .5, a: Math.random() * .3 + .05
+  });
+}
+
+function drawParticles() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for (const p of particles) {
+    p.x += p.vx; p.y += p.vy;
+    if (p.x < 0) p.x = canvas.width; if (p.x > canvas.width) p.x = 0;
+    if (p.y < 0) p.y = canvas.height; if (p.y > canvas.height) p.y = 0;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(139,92,246,${p.a})`; ctx.fill();
+  }
+  // Connect nearby particles
+  for (let i = 0; i < particles.length; i++) {
+    for (let j = i + 1; j < particles.length; j++) {
+      const dx = particles[i].x - particles[j].x;
+      const dy = particles[i].y - particles[j].y;
+      const d = Math.sqrt(dx * dx + dy * dy);
+      if (d < 150) {
+        ctx.beginPath(); ctx.moveTo(particles[i].x, particles[i].y);
+        ctx.lineTo(particles[j].x, particles[j].y);
+        ctx.strokeStyle = `rgba(139,92,246,${.06 * (1 - d / 150)})`;
+        ctx.lineWidth = .5; ctx.stroke();
+      }
+    }
+  }
+  requestAnimationFrame(drawParticles);
+}
+drawParticles();
+
+// ─── Terminal demo animation ───
+const termBody = document.getElementById('termBody');
+const demoLines = [
+  { text: '$ curl -X POST https://api.deep.io/v1/research \\', cls: 't-muted' },
+  { text: '    -H "Authorization: Bearer deep_p_abc123" \\', cls: 't-muted' },
+  { text: '    -d \'{"query": "quantum computing leaders 2026"}\'', cls: 't-muted' },
+  { text: '', cls: '' },
+  { text: '{"id": "rch_7f3a...", "status": "queued", "stream": "/v1/research/rch_7f3a.../stream"}', cls: 't-purple' },
+  { text: '', cls: '' },
+  { text: '[planning]  Breaking research into 4 sub-questions...', cls: 't-cyan' },
+  { text: '[searching] "quantum computing breakthroughs 2026"', cls: 't-blue' },
+  { text: '[searching] "IBM Google quantum supremacy comparison"', cls: 't-blue' },
+  { text: '[reading]   Nature: "Quantum Error Correction Milestone"', cls: 't-green' },
+  { text: '[reading]   IEEE: "Topological Qubits: The Next Frontier"', cls: 't-green' },
+  { text: '[analyzing] Sub-question 1/4: Current qubit counts...', cls: 't-amber' },
+  { text: '[analyzing] Sub-question 2/4: Error correction progress...', cls: 't-amber' },
+  { text: '[analyzing] Sub-question 3/4: Commercial applications...', cls: 't-amber' },
+  { text: '[analyzing] Sub-question 4/4: Investment landscape...', cls: 't-amber' },
+  { text: '[synthesis] Compiling final report...', cls: 't-pink' },
+  { text: '', cls: '' },
+  { text: '{"report": {', cls: 't-purple' },
+  { text: '  "title": "Quantum Computing in 2026: Leaders & Landscape",', cls: 't-purple' },
+  { text: '  "executive_summary": "IBM, Google, and emerging...",', cls: 't-green' },
+  { text: '  "key_findings": ["IBM reached 1121 qubits...", ...],', cls: 't-green' },
+  { text: '  "sections": [{...}, {...}, {...}],', cls: 't-muted' },
+  { text: '  "sources": [{"url": "nature.com/...", ...}, ...],', cls: 't-cyan' },
+  { text: '  "overall_confidence": 0.89', cls: 't-amber' },
+  { text: '}, "meta": {"sources_consulted": 12, "processing_time_ms": 47200}}', cls: 't-muted' },
+];
+
+let lineIdx = 0;
+function addLine() {
+  if (lineIdx >= demoLines.length) { lineIdx = 0; termBody.innerHTML = ''; }
+  const line = demoLines[lineIdx];
+  const el = document.createElement('div');
+  el.className = line.cls;
+  el.textContent = line.text || ' ';
+  // Remove old cursor
+  const old = termBody.querySelector('.cursor');
+  if (old) old.remove();
+  termBody.appendChild(el);
+  if (lineIdx < demoLines.length - 1) {
+    const cur = document.createElement('span');
+    cur.className = 'cursor';
+    termBody.appendChild(cur);
+  }
+  termBody.scrollTop = termBody.scrollHeight;
+  lineIdx++;
+  setTimeout(addLine, lineIdx <= 5 ? 600 : lineIdx <= 6 ? 1200 : 800);
+}
+setTimeout(addLine, 1500);
+
+// ─── Try it ───
+async function tryIt() {
+  const btn = document.getElementById('tryBtn');
+  const rd = document.getElementById('tryResult');
+  const pre = document.getElementById('tryPre');
+  const key = document.getElementById('tryKey').value.trim();
+  const query = document.getElementById('tryQuery').value.trim();
+  const depth = document.getElementById('tryDepth').value;
+  const mode = document.getElementById('tryMode').value;
+
+  if (!key) { alert('Enter your API key'); return; }
+  if (!query) { alert('Enter a query'); return; }
+
+  btn.textContent = 'Researching...';
+  btn.disabled = true;
+  rd.style.display = 'block';
+  pre.textContent = 'Initializing research agent...\n';
+
+  try {
+    let url, body;
+    if (mode === 'research') {
+      url = '/v1/research/quick';
+      body = { query, depth };
+    } else if (mode === 'fact-check') {
+      url = '/v1/fact-check';
+      body = { claims: query };
+    } else {
+      url = '/v1/compare';
+      const parts = query.split(/\s+vs\.?\s+|\s+versus\s+|\s*,\s*/i);
+      body = { entities: parts.length > 1 ? parts : [query] };
+    }
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    pre.textContent = JSON.stringify(data, null, 2);
+  } catch (e) {
+    pre.textContent = 'Error: ' + e.message;
+  }
+
+  btn.textContent = 'Run research';
+  btn.disabled = false;
+}
+</script>
+</body>
+</html>
