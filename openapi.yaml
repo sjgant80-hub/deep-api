@@ -1,0 +1,573 @@
+openapi: 3.0.3
+info:
+  title: Deep API
+  version: 1.0.0
+  description: |
+    Research Intelligence as a Service. Ask anything, get structured reports with citations.
+    Fact-check claims. Compare entities. Extract data from URLs.
+
+    Deep API turns any question into a fully-cited research report powered by multiple AI providers.
+    Submit a query and receive structured findings with source citations, confidence scores,
+    and follow-up suggestions. Use the fact-check endpoint to verify claims against live sources,
+    compare entities side-by-side, or extract structured data from any URL.
+  contact:
+    name: Deep API Support
+    url: https://deep-api.dev
+  license:
+    name: Proprietary
+  x-rapidapi-tags:
+    - research API
+    - fact check API
+    - AI research
+    - entity comparison
+    - web extraction
+    - citation API
+
+servers:
+  - url: https://deep-api.dev
+    description: Production
+
+tags:
+  - name: Research
+    description: Async and sync research endpoints
+  - name: Fact Check
+    description: Verify claims against live sources
+  - name: Compare
+    description: Side-by-side entity comparison
+  - name: Extract
+    description: Structured data extraction from URLs
+  - name: System
+    description: Health and status
+
+paths:
+  /v1/research:
+    post:
+      operationId: startResearch
+      summary: Start async research task
+      description: |
+        Submit a research query for asynchronous processing. Returns a task ID
+        that can be polled or streamed for results. Optionally provide a webhook
+        URL to receive results when complete.
+      tags:
+        - Research
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - query
+              properties:
+                query:
+                  type: string
+                  description: The research question or topic to investigate
+                  example: "What are the environmental impacts of lithium mining?"
+                depth:
+                  type: string
+                  enum: [quick, standard, deep]
+                  default: standard
+                  description: Research depth — quick (1-2 sources), standard (3-5), deep (5-10+)
+                provider:
+                  type: string
+                  enum: [auto, anthropic, openai, google]
+                  default: auto
+                  description: AI provider to use for research synthesis
+                webhook:
+                  type: string
+                  format: uri
+                  description: URL to POST results to when research completes
+      responses:
+        '202':
+          description: Research task accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: Unique task identifier
+                    example: "task_abc123"
+                  status:
+                    type: string
+                    enum: [queued, processing]
+                    example: queued
+                  poll:
+                    type: string
+                    description: URL to poll for results
+                    example: "/v1/research/task_abc123"
+                  stream:
+                    type: string
+                    description: URL for SSE streaming
+                    example: "/v1/research/task_abc123/stream"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /v1/research/quick:
+    post:
+      operationId: quickResearch
+      summary: Synchronous quick research
+      description: |
+        Submit a research query and receive the full result synchronously.
+        Best for simple questions that need a fast turnaround. The response
+        includes structured findings with citations.
+      tags:
+        - Research
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - query
+              properties:
+                query:
+                  type: string
+                  description: The research question or topic
+                  example: "Who invented the transistor and when?"
+                provider:
+                  type: string
+                  enum: [auto, anthropic, openai, google]
+                  default: auto
+                  description: AI provider to use
+      responses:
+        '200':
+          description: Research result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResearchResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /v1/research/{id}:
+    get:
+      operationId: getResearchStatus
+      summary: Poll research task status
+      description: Check the status of an async research task and retrieve results when complete.
+      tags:
+        - Research
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Task ID returned from POST /v1/research
+      responses:
+        '200':
+          description: Task status and results (if complete)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  status:
+                    type: string
+                    enum: [queued, processing, completed, failed]
+                  progress:
+                    type: number
+                    minimum: 0
+                    maximum: 100
+                    description: Completion percentage
+                  result:
+                    $ref: '#/components/schemas/ResearchResult'
+                  error:
+                    type: string
+                    description: Error message if status is failed
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /v1/research/{id}/stream:
+    get:
+      operationId: streamResearch
+      summary: Stream research results via SSE
+      description: |
+        Server-Sent Events stream for real-time research progress updates.
+        Events include progress updates, partial findings, and the final result.
+      tags:
+        - Research
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Task ID returned from POST /v1/research
+      responses:
+        '200':
+          description: SSE event stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: |
+                  Event types: progress, finding, result, error, done
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /v1/fact-check:
+    post:
+      operationId: factCheck
+      summary: Fact-check claims
+      description: |
+        Submit one or more claims for verification. Returns a verdict for each
+        claim (true, false, partially true, unverifiable) along with supporting
+        evidence and source citations.
+      tags:
+        - Fact Check
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - claims
+              properties:
+                claims:
+                  oneOf:
+                    - type: string
+                      description: A single claim to verify
+                    - type: array
+                      items:
+                        type: string
+                      description: Multiple claims to verify
+                  example: "The Great Wall of China is visible from space"
+                provider:
+                  type: string
+                  enum: [auto, anthropic, openai, google]
+                  default: auto
+      responses:
+        '200':
+          description: Fact-check verdicts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  verdicts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Verdict'
+                  checked_at:
+                    type: string
+                    format: date-time
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /v1/compare:
+    post:
+      operationId: compareEntities
+      summary: Compare entities
+      description: |
+        Compare two or more entities across specified aspects. Returns a
+        structured comparison table with sourced data for each entity and aspect.
+      tags:
+        - Compare
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - entities
+              properties:
+                entities:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 2
+                  description: Entities to compare (minimum 2)
+                  example: ["PostgreSQL", "MySQL", "MongoDB"]
+                aspects:
+                  type: array
+                  items:
+                    type: string
+                  description: Specific aspects to compare (optional, auto-detected if omitted)
+                  example: ["performance", "scalability", "ease of use", "pricing"]
+                provider:
+                  type: string
+                  enum: [auto, anthropic, openai, google]
+                  default: auto
+      responses:
+        '200':
+          description: Comparison table
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComparisonResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /v1/extract:
+    post:
+      operationId: extractData
+      summary: Extract structured data from URL
+      description: |
+        Extract structured data from a given URL according to an optional schema.
+        The API fetches the page, parses its content, and returns structured data
+        matching the requested schema.
+      tags:
+        - Extract
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - url
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: URL to extract data from
+                  example: "https://en.wikipedia.org/wiki/Transistor"
+                schema:
+                  type: object
+                  description: JSON schema describing the desired output structure
+                  example:
+                    title: string
+                    summary: string
+                    key_dates: array
+                provider:
+                  type: string
+                  enum: [auto, anthropic, openai, google]
+                  default: auto
+      responses:
+        '200':
+          description: Extracted data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                  extracted:
+                    type: object
+                    description: Data matching the requested schema
+                  confidence:
+                    type: number
+                    minimum: 0
+                    maximum: 1
+                  source_title:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /health:
+    get:
+      operationId: healthCheck
+      summary: Health check
+      description: Returns API health status and version information.
+      tags:
+        - System
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  version:
+                    type: string
+                    example: "1.0.0"
+                  uptime:
+                    type: number
+                    description: Uptime in seconds
+
+components:
+  schemas:
+    ResearchResult:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique result identifier
+        query:
+          type: string
+          description: Original research query
+        summary:
+          type: string
+          description: Executive summary of findings
+        findings:
+          type: array
+          items:
+            type: object
+            properties:
+              title:
+                type: string
+              content:
+                type: string
+              confidence:
+                type: number
+                minimum: 0
+                maximum: 1
+              citations:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Citation'
+        follow_up:
+          type: array
+          items:
+            type: string
+          description: Suggested follow-up questions
+        metadata:
+          type: object
+          properties:
+            provider:
+              type: string
+            depth:
+              type: string
+            sources_consulted:
+              type: integer
+            processing_time_ms:
+              type: integer
+
+    Citation:
+      type: object
+      properties:
+        title:
+          type: string
+        url:
+          type: string
+          format: uri
+        snippet:
+          type: string
+        published_date:
+          type: string
+
+    Verdict:
+      type: object
+      properties:
+        claim:
+          type: string
+          description: The original claim
+        verdict:
+          type: string
+          enum: [true, false, partially_true, unverifiable]
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        explanation:
+          type: string
+          description: Reasoning behind the verdict
+        evidence:
+          type: array
+          items:
+            type: object
+            properties:
+              source:
+                type: string
+              url:
+                type: string
+                format: uri
+              supports:
+                type: boolean
+              snippet:
+                type: string
+
+    ComparisonResult:
+      type: object
+      properties:
+        entities:
+          type: array
+          items:
+            type: string
+        aspects:
+          type: array
+          items:
+            type: string
+        table:
+          type: array
+          description: Row per aspect, columns per entity
+          items:
+            type: object
+            properties:
+              aspect:
+                type: string
+              values:
+                type: object
+                additionalProperties:
+                  type: string
+                description: Entity name to value mapping
+        summary:
+          type: string
+          description: Overall comparison summary
+        citations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Citation'
+
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              message:
+                type: string
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+
+    RateLimited:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              limit:
+                type: integer
+              used:
+                type: integer
+              tier:
+                type: string
+              upgrade:
+                type: string
+
+  securitySchemes:
+    RapidAPI:
+      type: apiKey
+      in: header
+      name: X-RapidAPI-Key
+      description: Your RapidAPI application key
+
+security:
+  - RapidAPI: []
