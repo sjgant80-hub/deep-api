@@ -475,6 +475,15 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.static('public'));
 
 function auth(req, res, next) {
+  // RapidAPI proxy path — when deployed behind RapidAPI's marketplace
+  const proxySecret = process.env.RAPIDAPI_PROXY_SECRET;
+  if (proxySecret && req.headers['x-rapidapi-proxy-secret'] === proxySecret) {
+    req.tier = 'rapidapi';
+    req.rapidUser = req.headers['x-rapidapi-user'] || null;
+    req.rapidSubscription = req.headers['x-rapidapi-subscription'] || null;
+    return next();
+  }
+  // Direct / dev path — Bearer token or x-api-key header
   const key = req.headers.authorization?.replace('Bearer ', '') || req.headers['x-api-key'];
   if (!key) return res.status(401).json({ error: 'API key required. Use Authorization: Bearer <key>' });
   if (key === ADMIN_KEY) { req.tier = 'admin'; return next(); }

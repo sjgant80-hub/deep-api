@@ -40,6 +40,30 @@ tags:
     description: Health and status
 
 paths:
+  /health:
+    get:
+      operationId: health
+      summary: Service health check
+      description: Returns service status, version, providers, search availability, and active task count.
+      tags:
+        - Health
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+                  version: { type: string, example: "1.0.0" }
+                  providers:
+                    type: array
+                    items: { type: string }
+                  search: { type: boolean }
+                  activeTasks: { type: integer }
+
   /v1/research:
     post:
       operationId: startResearch
