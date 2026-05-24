@@ -24,8 +24,8 @@ info:
     - citation API
 
 servers:
-  - url: https://deep-api-production.up.railway.app
-    description: Production (Railway · direct)
+  - url: https://deep-api-fe9d.onrender.com
+    description: Production (Render · direct)
   - url: https://deep-api.p.rapidapi.com
     description: RapidAPI Marketplace (after listing)
 

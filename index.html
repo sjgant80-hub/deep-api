@@ -518,13 +518,13 @@ async function tryIt() {
   try {
     let url, body;
     if (mode === 'research') {
-      url = (window.DEEP_API_BASE || 'https://deep-api-production.up.railway.app') + '/v1/research/quick';
+      url = (window.DEEP_API_BASE || 'https://deep-api-fe9d.onrender.com') + '/v1/research/quick';
       body = { query, depth };
     } else if (mode === 'fact-check') {
-      url = (window.DEEP_API_BASE || 'https://deep-api-production.up.railway.app') + '/v1/fact-check';
+      url = (window.DEEP_API_BASE || 'https://deep-api-fe9d.onrender.com') + '/v1/fact-check';
       body = { claims: query };
     } else {
-      url = (window.DEEP_API_BASE || 'https://deep-api-production.up.railway.app') + '/v1/compare';
+      url = (window.DEEP_API_BASE || 'https://deep-api-fe9d.onrender.com') + '/v1/compare';
       const parts = query.split(/\s+vs\.?\s+|\s+versus\s+|\s*,\s*/i);
       body = { entities: parts.length > 1 ? parts : [query] };
     }
