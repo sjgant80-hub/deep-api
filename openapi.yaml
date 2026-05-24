@@ -24,8 +24,10 @@ info:
     - citation API
 
 servers:
-  - url: https://deep-api.dev
-    description: Production
+  - url: https://deep-api-production.up.railway.app
+    description: Production (Railway · direct)
+  - url: https://deep-api.p.rapidapi.com
+    description: RapidAPI Marketplace (after listing)
 
 tags:
   - name: Research
