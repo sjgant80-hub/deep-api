@@ -20,6 +20,12 @@ paths:
           description: Service is healthy
           content:
             application/json:
+              example:
+                status: ok
+                version: "1.0.0"
+                providers: [anthropic]
+                search: false
+                activeTasks: 0
               schema:
                 type: object
 
@@ -32,23 +38,28 @@ paths:
         required: true
         content:
           application/json:
+            example:
+              query: "current state of quantum computing 2026"
+              depth: "standard"
+              citations: true
             schema:
               type: object
               required: [query]
               properties:
-                query:    { type: string, example: "current state of quantum computing 2026" }
-                depth:    { type: string, example: "standard" }
-                citations: { type: boolean, example: true }
+                query:    { type: string }
+                depth:    { type: string }
+                citations: { type: boolean }
       responses:
         '202':
           description: Research task accepted
           content:
             application/json:
+              example:
+                task_id: "rsr_abc123"
+                status: "pending"
+                eta_seconds: 25
               schema:
                 type: object
-                properties:
-                  task_id: { type: string }
-                  status:  { type: string }
 
   /v1/research/quick:
     post:
@@ -59,16 +70,24 @@ paths:
         required: true
         content:
           application/json:
+            example:
+              query: "who founded Stripe and when"
             schema:
               type: object
               required: [query]
               properties:
-                query: { type: string, example: "who founded Stripe and when" }
+                query: { type: string }
       responses:
         '200':
           description: Research report with citations
           content:
             application/json:
+              example:
+                query: "who founded Stripe and when"
+                summary: "Stripe was founded in 2010 by Irish brothers Patrick and John Collison."
+                citations:
+                  - { title: "Stripe — About", url: "https://stripe.com/about" }
+                confidence: 0.95
               schema:
                 type: object
 
@@ -88,6 +107,11 @@ paths:
           description: Research task result
           content:
             application/json:
+              example:
+                task_id: "rsr_abc123"
+                status: "complete"
+                report: "..."
+                citations: []
               schema:
                 type: object
 
@@ -100,6 +124,9 @@ paths:
         required: true
         content:
           application/json:
+            example:
+              claims:
+                - "The Earth orbits the Sun in 365.25 days"
             schema:
               type: object
               required: [claims]
@@ -107,12 +134,17 @@ paths:
                 claims:
                   type: array
                   items: { type: string }
-                  example: ["The Earth orbits the Sun in 365.25 days"]
       responses:
         '200':
           description: Fact-check verdicts with sources
           content:
             application/json:
+              example:
+                results:
+                  - claim: "The Earth orbits the Sun in 365.25 days"
+                    verdict: "mostly_true"
+                    evidence: "..."
+                    sources: []
               schema:
                 type: object
 
@@ -125,6 +157,9 @@ paths:
         required: true
         content:
           application/json:
+            example:
+              entities: ["React", "Vue", "Svelte"]
+              criteria: ["performance", "ecosystem", "learning curve"]
             schema:
               type: object
               required: [entities]
@@ -132,16 +167,18 @@ paths:
                 entities:
                   type: array
                   items: { type: string }
-                  example: ["React", "Vue", "Svelte"]
                 criteria:
                   type: array
                   items: { type: string }
-                  example: ["performance", "ecosystem", "learning curve"]
       responses:
         '200':
           description: Structured comparison
           content:
             application/json:
+              example:
+                entities: ["React", "Vue", "Svelte"]
+                comparison_table: {}
+                winner_by_criterion: {}
               schema:
                 type: object
 
@@ -154,16 +191,25 @@ paths:
         required: true
         content:
           application/json:
+            example:
+              url: "https://example.com/article"
+              schema: { title: "string", author: "string", date: "string" }
             schema:
               type: object
               required: [url]
               properties:
-                url:    { type: string, format: uri, example: "https://example.com/article" }
+                url:    { type: string, format: uri }
                 schema: { type: object }
       responses:
         '200':
           description: Extracted structured data
           content:
             application/json:
+              example:
+                url: "https://example.com/article"
+                extracted:
+                  title: "Article title"
+                  author: "Jane Doe"
+                  date: "2026-05-24"
               schema:
                 type: object
