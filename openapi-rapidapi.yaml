@@ -1,0 +1,169 @@
+openapi: 3.0.3
+info:
+  title: Deep
+  version: 1.0.0
+  description: |
+    Deep turns any question into a fully-cited research report with confidence scores. Fact-check claims with verdicts (true, mostly_true, mixed, mostly_false, false, unverifiable) backed by evidence. Compare entities side-by-side. Extract structured data from any URL.
+
+servers:
+  - url: https://deep-api-fe9d.onrender.com
+
+paths:
+
+  /health:
+    get:
+      operationId: health
+      summary: Service health
+      description: Returns status, version, configured providers, search availability, and active task count.
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /v1/research:
+    post:
+      operationId: startResearch
+      summary: Start an async research task
+      description: Submit a question and get back a research task ID. Poll the task endpoint to retrieve the cited report.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query]
+              properties:
+                query:    { type: string, example: "current state of quantum computing 2026" }
+                depth:    { type: string, example: "standard" }
+                citations: { type: boolean, example: true }
+      responses:
+        '202':
+          description: Research task accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task_id: { type: string }
+                  status:  { type: string }
+
+  /v1/research/quick:
+    post:
+      operationId: researchQuick
+      summary: One-shot synchronous research
+      description: Submit a question and get the cited report back in one request. Best for short queries.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query]
+              properties:
+                query: { type: string, example: "who founded Stripe and when" }
+      responses:
+        '200':
+          description: Research report with citations
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /v1/research/{id}:
+    get:
+      operationId: getResearch
+      summary: Get a research task result
+      description: Retrieve a previously submitted async research task by its ID.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Research task result
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /v1/fact-check:
+    post:
+      operationId: factCheck
+      summary: Fact-check claims
+      description: Submit one or more claims and get verdicts (true/mostly_true/mixed/mostly_false/false/unverifiable) with evidence.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [claims]
+              properties:
+                claims:
+                  type: array
+                  items: { type: string }
+                  example: ["The Earth orbits the Sun in 365.25 days"]
+      responses:
+        '200':
+          description: Fact-check verdicts with sources
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /v1/compare:
+    post:
+      operationId: compareEntities
+      summary: Compare entities side-by-side
+      description: Submit two or more entities (products, technologies, concepts) and get a structured comparison with scoring.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [entities]
+              properties:
+                entities:
+                  type: array
+                  items: { type: string }
+                  example: ["React", "Vue", "Svelte"]
+                criteria:
+                  type: array
+                  items: { type: string }
+                  example: ["performance", "ecosystem", "learning curve"]
+      responses:
+        '200':
+          description: Structured comparison
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /v1/extract:
+    post:
+      operationId: extractData
+      summary: Extract structured data from a URL
+      description: Provide a URL and an optional schema. Returns extracted structured data.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url:    { type: string, format: uri, example: "https://example.com/article" }
+                schema: { type: object }
+      responses:
+        '200':
+          description: Extracted structured data
+          content:
+            application/json:
+              schema:
+                type: object
